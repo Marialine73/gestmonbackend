@@ -74,10 +74,12 @@ class AuthController extends Controller
 
     private function validateLogoutRequest(Request $request): void
     {
-        if (!$request->user())
-            throw new \Exception('No hay sesión activa', 401);
 
-        if ($request->user()->tokens()->count() === 0)
-            throw new \Exception('No se encontraron tokens activos', 400);
+        if (!$request->user()) {
+    throw new \Exception('No hay sesión activa', 401);
     }
-}
+
+        if ($request->user()->tokens()->count() === 0) {
+    throw new \Exception('No se encontraron tokens activos', 400);
+    }
+        }
