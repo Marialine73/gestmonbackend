@@ -16,7 +16,6 @@ class AuthController extends Controller
                 'password' => 'required'
             ]);
 
-            // Load usuario with persona, roles, and persona's carreras
             $usuario = Usuario::with(['persona', 'roles.rol', 'persona.carreras.carrera'])
                 ->where('username', $request->username)
                 ->first();
@@ -31,33 +30,32 @@ class AuthController extends Controller
 
             return response()->json([
                 'access_token' => $token,
-                'token_type' => 'Bearer',
-                'user' => [
-                    'id' => $usuario->idusuario,
+                'token_type'   => 'Bearer',
+                'user'         => [
+                    'id'       => $usuario->idusuario,
                     'username' => $usuario->username,
-                    'persona' => [
-                        'nombres' => $usuario->persona->nombres,
+                    'persona'  => [
+                        'nombres'   => $usuario->persona->nombres,
                         'apellidos' => $usuario->persona->apellidos,
-                        'email' => $usuario->persona->email
+                        'email'     => $usuario->persona->email
                     ],
-                    'roles' => $usuario->roles->map(function($userRole) {
+                    'roles' => $usuario->roles->map(function ($userRole) {
                         return [
-                            'id' => $userRole->rol->idrol,
+                            'id'     => $userRole->rol->idrol,
                             'nombre' => $userRole->rol->nombre
                         ];
                     }),
-                    'carreras' => $usuario->persona->carreras->map(function($personaCarrera) {
+                    'carreras' => $usuario->persona->carreras->map(function ($personaCarrera) {
                         return [
-                            'id' => $personaCarrera->carrera->idcarrera,
+                            'id'     => $personaCarrera->carrera->idcarrera,
                             'nombre' => $personaCarrera->carrera->nombre
                         ];
                     })
                 ]
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error en el inicio de sesión',
+                'error'   => 'Error en el inicio de sesión',
                 'details' => $e->getMessage()
             ], 500);
         }
@@ -66,33 +64,20 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            // Check if user is authenticated
-            if (!$request->user()) {
-                return response()->json([
-                    'error' => 'No hay sesión activa'
-                ], 401);
-            }
-
-            // Check if user has any active tokens
-            if ($request->user()->tokens()->count() === 0) {
-                return response()->json([
-                    'error' => 'No se encontraron tokens activos'
-                ], 400);
-            }
-
-            // Revoke all tokens for the current user
+            $this->validateLogoutRequest($request);
             $request->user()->tokens()->delete();
-
-            return response()->json([
-                'message' => 'Sesión cerrada exitosamente'
-            ]);
-            
+            return response()->json(['message' => 'Sesión cerrada'], 200);
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al cerrar sesión',
-                'details' => $e->getMessage(),
-                'code' => $e->getCode()
-            ], 500);
+            return response()->json(['details' => $e->getMessage()], 500);
         }
+    }
+
+    private function validateLogoutRequest(Request $request): void
+    {
+        if (!$request->user())
+            throw new \Exception('No hay sesión activa', 401);
+
+        if ($request->user()->tokens()->count() === 0)
+            throw new \Exception('No se encontraron tokens activos', 400);
     }
 }
